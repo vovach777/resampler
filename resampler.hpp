@@ -15,6 +15,8 @@ inline float linear(float x, float width, float x0, float x1)
 
 }
 
+constexpr float NaNf = std::numeric_limits<float>::quiet_NaN();
+
 
 class LowPassFilter {
 public:
@@ -48,8 +50,13 @@ public:
         {
 
             upscale_factor = dst_rate * 2 / src_rate;
-            lpf = LowPassFilter(LowPassFilter::calculate_alpha(src_rate*upscale_factor,dst_rate/2));
+            lpf = LowPassFilter(src_rate*upscale_factor,dst_rate/2);
 
+        } else
+        if (  dst_rate < src_rate )
+        {
+            upscale_factor = 1;
+            //lpf = LowPassFilter(src_rate*upscale_factor,dst_rate/2);
         } else {
             upscale_factor = 1;
         }
@@ -71,12 +78,17 @@ public:
         {
 
             if (upscale_factor > 1)   {
+                if ( std::isnan(prev_sample) ) {
+                    prev_sample = cur_sample;
+                    return 0;
+                }
                 sample = linear(i,upscale_factor, prev_sample, cur_sample);
             }
+            sample = lpf.process(sample);
             src_time++;
 
             while ( dst_time * (src_rate*upscale_factor) / dst_rate   <  src_time  ) {
-                output.push_back( lpf.process(sample) );
+                output.push_back( sample );
                 dst_time++;
             }
 
@@ -103,7 +115,7 @@ private:
     int dst_rate{44100};
     uint64_t dst_time{0};
     uint64_t src_time{0};
-    float prev_sample{0};
+    float prev_sample{NaN};
     int upscale_factor{0};
     std::vector<float> output;
     LowPassFilter lpf{1};
