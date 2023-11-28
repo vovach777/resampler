@@ -115,7 +115,7 @@ private:
     int dst_rate{44100};
     uint64_t dst_time{0};
     uint64_t src_time{0};
-    float prev_sample{NaN};
+    float prev_sample{NaNf};
     int upscale_factor{0};
     std::vector<float> output;
     LowPassFilter lpf{1};
